@@ -1,0 +1,208 @@
+@use 'styles/variables' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: $font-base;
+  font-size: 14px;
+  color: $color-text;
+  background: $color-bg;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+// ---------- Buttons ----------
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 6px;
+  border: 1px solid $color-border-strong;
+  background: $color-surface;
+  color: $color-text;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: $color-surface-muted;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $color-primary;
+    border-color: $color-primary;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: $color-primary-hover;
+    }
+  }
+}
+
+// ---------- Formular-Elemente ----------
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: $color-text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+.input,
+.select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid $color-border-strong;
+  border-radius: 6px;
+  background: $color-surface;
+  font: inherit;
+  color: $color-text;
+
+  &:focus {
+    outline: 2px solid rgba($color-primary, 0.25);
+    border-color: $color-primary;
+  }
+
+  &.is-invalid {
+    border-color: $color-danger;
+  }
+}
+
+// ---------- Karten & Seitenlayout ----------
+.card {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: 20px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+.page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  p {
+    margin: 4px 0 0;
+    color: $color-text-muted;
+  }
+}
+
+.page__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// Aktionsleiste unten (Buttons rechts)
+.page__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid $color-border;
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+// ---------- Meldungen ----------
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+
+  &--error {
+    background: #fdecea;
+    color: $color-danger;
+    border: 1px solid #f5c2bc;
+  }
+
+  &--info {
+    background: $color-range-fill;
+    color: $color-primary;
+    border: 1px solid $color-range-header;
+  }
+
+  &--warning {
+    background: #fff4e0;
+    color: $color-warning;
+    border: 1px solid #f5d9a8;
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: $color-text-muted;
+
+  &::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid $color-border-strong;
+    border-top-color: $color-primary;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: $color-surface-muted;
+  border: 1px solid $color-border;
+  font-size: 12px;
+}
