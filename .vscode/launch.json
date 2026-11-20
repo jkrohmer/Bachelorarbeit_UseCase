@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend (API)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "backend: build",
+      "program": "${workspaceFolder}/Backend/IntakeApi/bin/Debug/net10.0/IntakeApi.dll",
+      "cwd": "${workspaceFolder}/Backend/IntakeApi",
+      "launchSettingsProfile": "http",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Frontend (Angular)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "frontend: start",
+      "url": "http://localhost:4200/",
+      "webRoot": "${workspaceFolder}/Frontend/intake-app"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Backend + Frontend",
+      "configurations": ["Backend (API)", "Frontend (Angular)"],
+      "stopAll": true
+    }
+  ]
+}
