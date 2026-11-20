@@ -1,0 +1,68 @@
+@use 'styles/variables' as *;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.layout {
+  flex-direction: row;
+  gap: 16px;
+}
+
+.result-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table {
+  flex: 1;
+  min-height: 0;
+}
+
+.side {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: flex-start;
+
+  h3 {
+    font-size: 15px;
+  }
+}
+
+.facts {
+  margin: 0 0 8px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 13px;
+
+  dt {
+    color: $color-text-muted;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 500;
+    word-break: break-word;
+  }
+}
+
+.btn--block {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column-reverse;
+  }
+
+  .side {
+    width: 100%;
+  }
+}

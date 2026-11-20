@@ -1,0 +1,56 @@
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1>Preview</h1>
+      <p>Vorschau des Ergebnisses im Zielformat.</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--error">{{ error() }}</div>
+  }
+
+  <div class="page__body layout">
+    <div class="result-area">
+      @if (loading()) {
+        <div class="loading">Ergebnis wird geladen …</div>
+      } @else if (result()) {
+        @if (result(); as r) { <app-mapped-table class="table" [result]="r" [showSource]="false" /> }
+      }
+    </div>
+
+    <aside class="side card">
+      <h3>Ergebnis</h3>
+      @if (result(); as r) {
+        <dl class="facts">
+          <dt>Quelldatei</dt>
+          <dd>{{ state.fileName() }}</dd>
+          <dt>Sheet</dt>
+          <dd>{{ r.sheetName }}</dd>
+          <dt>Range</dt>
+          <dd>{{ r.range }}</dd>
+          <dt>Target Format</dt>
+          <dd>{{ r.targetFormatName }}</dd>
+          <dt>Größe</dt>
+          <dd>{{ r.rowCount }} Zeilen × {{ r.columns.length }} Spalten</dd>
+        </dl>
+      }
+
+      <button
+        class="btn btn--primary btn--block"
+        type="button"
+        [disabled]="!result() || downloading()"
+        (click)="download()"
+      >
+        @if (downloading()) { Wird erstellt … } @else { ⬇ Download Excel File }
+      </button>
+
+      <button class="btn btn--block" type="button" (click)="startOver()">Neue Datei verarbeiten</button>
+    </aside>
+  </div>
+
+  <footer class="page__actions">
+    <button class="btn" type="button" (click)="back()">← Back</button>
+    <span class="spacer"></span>
+  </footer>
+</section>

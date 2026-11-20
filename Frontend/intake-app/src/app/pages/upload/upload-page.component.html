@@ -1,0 +1,70 @@
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1>Upload</h1>
+      <p>Excel-Datei hochladen und Inhalt prüfen.</p>
+    </div>
+
+    @if (state.hasUpload() && state.sheets().length > 0) {
+      <div class="field sheet-select">
+        <label for="sheet">Sheet</label>
+        <select
+          id="sheet"
+          class="select"
+          [ngModel]="state.selectedSheet()"
+          (ngModelChange)="onSheetChange($event)"
+        >
+          @for (sheet of state.sheets(); track sheet.name) {
+            <option [value]="sheet.name">{{ sheet.name }} ({{ sheet.rowCount }} × {{ sheet.columnCount }})</option>
+          }
+        </select>
+      </div>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--error">{{ error() }}</div>
+  }
+
+  <div class="page__body">
+    @if (!state.hasUpload()) {
+      <label
+        class="dropzone"
+        [class.dropzone--active]="dragOver()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="dragOver.set(false)"
+        (drop)="onDrop($event)"
+      >
+        <input type="file" accept=".xlsx,.xlsm" hidden (change)="onFileSelected($event)" />
+        @if (uploading()) {
+          <div class="loading">Datei wird eingelesen …</div>
+        } @else {
+          <div class="dropzone__icon">⬆</div>
+          <div class="dropzone__title">Excel-Datei hierher ziehen</div>
+          <div class="dropzone__subtitle">oder <span class="link">Datei auswählen</span> (.xlsx, .xlsm)</div>
+        }
+      </label>
+    } @else {
+      <div class="file-bar card">
+        <span class="file-bar__icon">📄</span>
+        <span class="file-bar__name">{{ state.fileName() }}</span>
+        <span class="chip">{{ state.sheets().length }} Sheet(s)</span>
+        <span class="spacer"></span>
+        <button class="btn" type="button" (click)="removeFile()">Andere Datei</button>
+      </div>
+
+      @if (loadingPreview()) {
+        <div class="loading">Vorschau wird geladen …</div>
+      } @else if (preview()) {
+        @if (preview(); as p) { <app-sheet-preview class="preview" [preview]="p" /> }
+      }
+    }
+  </div>
+
+  <footer class="page__actions">
+    <span class="spacer"></span>
+    <button class="btn btn--primary" type="button" [disabled]="!state.hasUpload() || uploading()" (click)="start()">
+      Start →
+    </button>
+  </footer>
+</section>

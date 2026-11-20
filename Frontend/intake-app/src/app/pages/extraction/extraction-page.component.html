@@ -1,0 +1,109 @@
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1>Extraction Range</h1>
+      <p>Bereich im Sheet festlegen und das Target Format auswählen. Die erste Zeile der Range wird als Überschrift interpretiert.</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--error">{{ error() }}</div>
+  }
+
+  <div class="page__body layout">
+    <!-- Konfiguration -->
+    <aside class="config card">
+      <div class="field">
+        <label for="sheet">Sheet</label>
+        <select id="sheet" class="select" [ngModel]="state.selectedSheet()" (ngModelChange)="onSheetChange($event)">
+          @for (sheet of state.sheets(); track sheet.name) {
+            <option [value]="sheet.name">{{ sheet.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="config__section">
+        <h3>Extraction Range</h3>
+        <div class="range-inputs">
+          <div class="field">
+            <label for="start">Von</label>
+            <input
+              id="start"
+              class="input"
+              [class.is-invalid]="!startValid()"
+              [ngModel]="startCell()"
+              (ngModelChange)="startCell.set($event.toUpperCase())"
+              (blur)="onRangeChanged()"
+              (keyup.enter)="onRangeChanged()"
+              placeholder="A1"
+            />
+          </div>
+          <span class="range-inputs__sep">:</span>
+          <div class="field">
+            <label for="end">Bis</label>
+            <input
+              id="end"
+              class="input"
+              [class.is-invalid]="!endValid()"
+              [ngModel]="endCell()"
+              (ngModelChange)="endCell.set($event.toUpperCase())"
+              (blur)="onRangeChanged()"
+              (keyup.enter)="onRangeChanged()"
+              placeholder="P30"
+            />
+          </div>
+        </div>
+        <div class="range-summary">
+          <span>Range: <strong>{{ rangeText() }}</strong></span>
+          <button class="btn btn--small" type="button" (click)="resetRange()">Standard (A1:P30)</button>
+        </div>
+        @if (range(); as r) {
+          <p class="hint">{{ r.endRow - r.startRow + 1 }} Zeilen × {{ r.endColumn - r.startColumn + 1 }} Spalten</p>
+        } @else {
+          <p class="hint hint--error">Ungültige Zelle – Format z. B. „B3“.</p>
+        }
+      </div>
+
+      <div class="config__section">
+        <h3>Target Format</h3>
+        <div class="field">
+          <label for="format">Zielsystem</label>
+          <select id="format" class="select" [ngModel]="selectedFormatId()" (ngModelChange)="selectedFormatId.set($event)">
+            @for (format of targetFormats(); track format.id) {
+              <option [value]="format.id">{{ format.name }}</option>
+            }
+          </select>
+        </div>
+
+        @if (selectedFormat(); as format) {
+          <p class="hint">{{ format.description }}</p>
+          <ul class="target-columns">
+            @for (col of format.columns; track col.name) {
+              <li>
+                <span class="target-columns__name">{{ col.name }}</span>
+                <span class="target-columns__aliases">← {{ col.sourceAliases.join(', ') }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </aside>
+
+    <!-- Vorschau mit Rahmen -->
+    <div class="preview-area">
+      @if (loading()) {
+        <div class="loading">Vorschau wird geladen …</div>
+      } @else if (preview()) {
+        @if (preview(); as p) { <app-sheet-preview class="preview" [preview]="p" [highlightRange]="range()" /> }
+      }
+    </div>
+  </div>
+
+  <footer class="page__actions">
+    <button class="btn" type="button" (click)="back()">← Back</button>
+    <span class="spacer"></span>
+    <button class="btn btn--primary" type="button" [disabled]="!canContinue()" (click)="next()">
+      @if (submitting()) { Mapping läuft … } @else { Next → }
+    </button>
+  </footer>
+</section>

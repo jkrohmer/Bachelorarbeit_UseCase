@@ -1,0 +1,59 @@
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1>Mapping</h1>
+      <p>Jede Zielspalte zeigt, aus welcher Source-Spalte der Original-Datei die Werte übernommen wurden.</p>
+    </div>
+
+    @if (result(); as r) {
+      <div class="summary">
+        <span class="chip">Sheet: {{ r.sheetName }}</span>
+        <span class="chip">Range: {{ r.range }}</span>
+        <span class="chip">{{ r.targetFormatName }}</span>
+        <span class="chip chip--strong">{{ mappedCount() }} / {{ r.columns.length }} Spalten gemappt</span>
+        <span class="chip">{{ r.rowCount }} Zeilen</span>
+      </div>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--error">{{ error() }}</div>
+  }
+
+  @if (result(); as r) {
+    @if (emptyTargets().length > 0 || r.unmappedSourceColumns.length > 0) {
+      <div class="notes">
+        @if (emptyTargets().length > 0) {
+          <div class="alert alert--warning">
+            <strong>Ohne Source-Spalte (bleiben leer):</strong>
+            @for (c of emptyTargets(); track c.targetColumn; let last = $last) {
+              {{ c.targetColumn }}@if (!last) {, }
+            }
+          </div>
+        }
+        @if (r.unmappedSourceColumns.length > 0) {
+          <div class="alert alert--info">
+            <strong>Nicht übernommene Source-Spalten:</strong>
+            @for (s of r.unmappedSourceColumns; track s.columnLetter; let last = $last) {
+              {{ s.header }} ({{ s.columnLetter }})@if (!last) {, }
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <div class="page__body">
+    @if (loading()) {
+      <div class="loading">Mapping wird ausgeführt …</div>
+    } @else if (result()) {
+      @if (result(); as r) { <app-mapped-table class="table" [result]="r" [showSource]="true" /> }
+    }
+  </div>
+
+  <footer class="page__actions">
+    <button class="btn" type="button" (click)="back()">← Back</button>
+    <span class="spacer"></span>
+    <button class="btn btn--primary" type="button" [disabled]="!result()" (click)="next()">Next →</button>
+  </footer>
+</section>

@@ -1,0 +1,60 @@
+@use 'styles/variables' as *;
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 14px 24px;
+  background: $color-surface;
+  border-bottom: 1px solid $color-border;
+  box-shadow: $shadow;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: $color-primary;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  &__title {
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  &__stepper {
+    flex: 1;
+    max-width: 760px;
+    margin-left: auto;
+  }
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow: auto;
+
+  // Die geroutete Seite füllt den verfügbaren Platz
+  > ::ng-deep *:not(router-outlet) {
+    display: block;
+    height: 100%;
+  }
+}
