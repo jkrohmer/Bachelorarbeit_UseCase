@@ -1,0 +1,17 @@
+<ol class="stepper">
+  @for (step of steps; track step.path; let i = $index) {
+    <li
+      class="step"
+      [class.step--active]="i === activeIndex()"
+      [class.step--done]="i < activeIndex()"
+    >
+      <span class="step__number">
+        @if (i < activeIndex()) { ✓ } @else { {{ i + 1 }} }
+      </span>
+      <span class="step__label">{{ step.label }}</span>
+    </li>
+    @if (i < steps.length - 1) {
+      <li class="step__line" [class.step__line--done]="i < activeIndex()" aria-hidden="true"></li>
+    }
+  }
+</ol>

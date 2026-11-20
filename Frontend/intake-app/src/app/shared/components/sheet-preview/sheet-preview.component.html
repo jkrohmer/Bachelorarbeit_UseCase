@@ -1,0 +1,28 @@
+<div class="sheet">
+  <table class="sheet__table">
+    <thead>
+      <tr>
+        <th class="corner"></th>
+        @for (letter of preview().columnLetters; track $index; let c = $index) {
+          <th class="col-header" [class.col-header--active]="isColumnInRange(c)">{{ letter }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of preview().rows; track $index; let r = $index) {
+        <tr>
+          <th class="row-header" [class.row-header--active]="isRowInRange(r)">{{ r + 1 }}</th>
+          @for (cell of row; track $index; let c = $index) {
+            <td class="cell" [ngClass]="borderClasses(r, c)" [title]="cell">{{ cell }}</td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (preview().totalRows > preview().rows.length || preview().totalColumns > preview().columnLetters.length) {
+  <p class="sheet__hint">
+    Vorschau gekürzt – das Sheet hat {{ preview().totalRows }} Zeilen und {{ preview().totalColumns }} Spalten.
+  </p>
+}

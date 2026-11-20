@@ -1,0 +1,81 @@
+@use 'styles/variables' as *;
+
+.stepper {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 12px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $color-text-muted;
+  white-space: nowrap;
+
+  &__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid $color-border-strong;
+    font-size: 13px;
+    font-weight: 600;
+    background: $color-surface;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  &--active {
+    color: $color-primary;
+
+    .step__number {
+      border-color: $color-primary;
+      background: $color-primary;
+      color: #fff;
+    }
+
+    .step__label {
+      font-weight: 600;
+    }
+  }
+
+  &--done {
+    color: $color-text;
+
+    .step__number {
+      border-color: $color-success;
+      background: $color-success;
+      color: #fff;
+    }
+  }
+
+  &__line {
+    flex: 1;
+    min-width: 24px;
+    height: 2px;
+    background: $color-border-strong;
+
+    &--done {
+      background: $color-success;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .step__label {
+    display: none;
+  }
+
+  .step--active .step__label {
+    display: inline;
+  }
+}

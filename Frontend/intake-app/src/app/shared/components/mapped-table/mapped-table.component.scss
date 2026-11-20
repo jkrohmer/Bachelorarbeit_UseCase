@@ -1,0 +1,111 @@
+@use 'styles/variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  background: $color-surface;
+  flex: 1;
+}
+
+.mapped {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 6px 12px;
+    border-bottom: 1px solid $color-grid;
+    border-right: 1px solid $color-grid;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    background: $color-surface-muted;
+    z-index: 1;
+  }
+
+  &__target-row th {
+    top: 0;
+    font-weight: 600;
+    color: $color-text;
+    font-size: 14px;
+  }
+
+  &__source-row th {
+    top: 33px;
+    font-weight: 400;
+    background: $color-range-fill;
+    border-bottom: 2px solid $color-border-strong;
+  }
+
+  &__th--empty {
+    color: $color-text-muted !important;
+  }
+
+  &__td--empty {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 6px,
+      $color-surface-muted 6px,
+      $color-surface-muted 7px
+    );
+  }
+
+  &__rownum {
+    width: 44px;
+    text-align: center !important;
+    color: $color-text-muted;
+    font-size: 12px;
+  }
+
+  tbody tr:hover td {
+    background-color: $color-row-hover;
+  }
+
+  &__no-data {
+    text-align: center !important;
+    color: $color-text-muted;
+    padding: 24px !important;
+  }
+}
+
+.source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $color-text-muted;
+
+  &__arrow {
+    color: $color-primary;
+  }
+
+  &__letter {
+    display: inline-block;
+    min-width: 18px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: $color-primary;
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  &--none {
+    font-style: italic;
+    color: $color-warning;
+  }
+}

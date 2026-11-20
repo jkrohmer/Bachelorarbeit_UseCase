@@ -1,0 +1,46 @@
+<div class="table-wrap">
+  <table class="mapped">
+    <thead>
+      <tr class="mapped__target-row">
+        @if (showRowNumbers()) { <th class="mapped__rownum">#</th> }
+        @for (col of result().columns; track col.targetColumn) {
+          <th [class.mapped__th--empty]="!col.source">{{ col.targetColumn }}</th>
+        }
+      </tr>
+      @if (showSource()) {
+        <tr class="mapped__source-row">
+          @if (showRowNumbers()) { <th class="mapped__rownum"></th> }
+          @for (col of result().columns; track col.targetColumn) {
+            <th>
+              @if (col.source) {
+                <span class="source">
+                  <span class="source__arrow">↑</span>
+                  <span class="source__letter">{{ col.source.columnLetter }}</span>
+                  {{ col.source.header }}
+                </span>
+              } @else {
+                <span class="source source--none">keine Source-Spalte</span>
+              }
+            </th>
+          }
+        </tr>
+      }
+    </thead>
+    <tbody>
+      @for (r of rowIndices(); track r) {
+        <tr>
+          @if (showRowNumbers()) { <td class="mapped__rownum">{{ r + 1 }}</td> }
+          @for (col of result().columns; track col.targetColumn) {
+            <td [class.mapped__td--empty]="!col.source">{{ col.values[r] }}</td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td class="mapped__no-data" [attr.colspan]="result().columns.length + (showRowNumbers() ? 1 : 0)">
+            Keine Datenzeilen in der Extraction Range gefunden.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
