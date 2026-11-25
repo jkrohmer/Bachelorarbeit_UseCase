@@ -35,6 +35,19 @@ public interface IMappingService
     MappingResult Map(SheetData sheet, CellRange range, TargetFormat format);
 }
 
+/// <summary>Legt Reihenfolge und Übergangsbedingungen der Schritte fest.</summary>
+public interface IIntakeWorkflow
+{
+    /// <summary>Aktionen, die im aktuellen Schritt möglich sind.</summary>
+    IReadOnlyList<IntakeAction> GetAvailableActions(IntakeSession session, MappingResult? mapping);
+
+    /// <summary>Nächster Schritt; wirft eine ValidationException, wenn der Wechsel nicht erlaubt ist.</summary>
+    IntakeStep GetNextStep(IntakeSession session, MappingResult? mapping);
+
+    /// <summary>Vorheriger Schritt; wirft eine ValidationException, wenn der Wechsel nicht erlaubt ist.</summary>
+    IntakeStep GetPreviousStep(IntakeSession session);
+}
+
 /// <summary>
 /// Orchestriert den gesamten Intake-Ablauf (wird von den Controllern genutzt).
 /// Jede Operation liefert den vollständigen, aktuellen Session-Zustand zurück.
@@ -45,5 +58,7 @@ public interface IIntakeService
     IntakeStateDto GetState(Guid sessionId);
     IntakeStateDto Update(Guid sessionId, IntakeUpdateDto update);
     IntakeStateDto UpdateCells(Guid sessionId, CellsUpdateDto update);
+    IntakeStateDto Next(Guid sessionId);
+    IntakeStateDto Back(Guid sessionId);
     (byte[] Content, string FileName) ExportResult(Guid sessionId);
 }

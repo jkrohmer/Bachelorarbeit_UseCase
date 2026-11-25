@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using IntakeApi.Configuration;
 using IntakeApi.Middleware;
 using IntakeApi.Services;
@@ -16,9 +18,12 @@ builder.Services.AddSingleton<ITargetFormatService, TargetFormatService>();
 builder.Services.AddScoped<IExcelReaderService, ExcelReaderService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<IMappingService, MappingService>();
+builder.Services.AddSingleton<IIntakeWorkflow, IntakeWorkflow>();
 builder.Services.AddScoped<IIntakeService, IntakeService>();
 
-builder.Services.AddControllers();
+// Enums (z. B. IntakeStep) als lesbare Strings ("mapping") statt Zahlen serialisieren
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>

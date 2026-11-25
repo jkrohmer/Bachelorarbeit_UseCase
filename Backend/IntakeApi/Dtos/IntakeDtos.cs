@@ -1,14 +1,20 @@
+using IntakeApi.Models;
+
 namespace IntakeApi.Dtos;
 
 // ---------- Zustand einer Session (Antwort auf jede Anfrage) ----------
 
 /// <summary>
 /// Vollständiger, aktueller Zustand einer Intake-Session. Wird nach Upload, Laden und
-/// jeder Änderung zurückgegeben, damit das Frontend immer den Stand des Backends anzeigt.
+/// jeder Änderung zurückgegeben, damit jeder Client (UI oder Agent) immer den Stand des Backends kennt.
+/// CurrentStep und AvailableActions zeigen, wo im Ablauf die Session steht und welche
+/// Schrittwechsel (Next/Back) gerade möglich sind.
 /// </summary>
 public record IntakeStateDto(
     Guid SessionId,
     string FileName,
+    IntakeStep CurrentStep,
+    IReadOnlyList<IntakeAction> AvailableActions,
     IReadOnlyList<SheetInfoDto> Sheets,
     string SelectedSheet,
     string? Range,

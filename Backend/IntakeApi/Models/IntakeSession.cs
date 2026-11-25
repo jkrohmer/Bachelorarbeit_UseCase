@@ -16,6 +16,9 @@ public class IntakeSession
 
     public List<SheetData> Sheets { get; init; } = new();
 
+    /// <summary>Aktueller Schritt im Ablauf (wird nur über Next/Back geändert).</summary>
+    public IntakeStep CurrentStep { get; set; } = IntakeStep.Upload;
+
     // Konfiguration (Schritt 1 und 2)
     public required string SelectedSheet { get; set; }
     public CellRange? ExtractionRange { get; set; }

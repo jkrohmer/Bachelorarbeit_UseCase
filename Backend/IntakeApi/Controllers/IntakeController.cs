@@ -6,7 +6,8 @@ namespace IntakeApi.Controllers;
 
 /// <summary>
 /// Endpunkte für den Intake-Ablauf. Der komplette Zustand liegt im Backend:
-/// Änderungen werden als Delta per PATCH geschickt, jede Antwort enthält den vollständigen neuen Zustand.
+/// Datenänderungen werden als Delta per PATCH geschickt, Schrittwechsel per POST next/back.
+/// Jede Antwort enthält den vollständigen neuen Zustand.
 /// </summary>
 [ApiController]
 [Route("api/intake")]
@@ -40,6 +41,20 @@ public class IntakeController(IIntakeService intakeService) : ControllerBase
     public ActionResult<IntakeStateDto> UpdateCells(Guid sessionId, [FromBody] CellsUpdateDto update)
     {
         return Ok(intakeService.UpdateCells(sessionId, update));
+    }
+
+    /// <summary>Zum nächsten Schritt wechseln (400, wenn der Wechsel im aktuellen Zustand nicht erlaubt ist).</summary>
+    [HttpPost("{sessionId:guid}/next")]
+    public ActionResult<IntakeStateDto> Next(Guid sessionId)
+    {
+        return Ok(intakeService.Next(sessionId));
+    }
+
+    /// <summary>Zum vorherigen Schritt wechseln (400 im ersten Schritt).</summary>
+    [HttpPost("{sessionId:guid}/back")]
+    public ActionResult<IntakeStateDto> Back(Guid sessionId)
+    {
+        return Ok(intakeService.Back(sessionId));
     }
 
     /// <summary>Mapping-Ergebnis des aktuellen Zustands als Excel-Datei herunterladen.</summary>

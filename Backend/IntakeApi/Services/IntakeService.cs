@@ -11,8 +11,10 @@ namespace IntakeApi.Services;
 /// Orchestriert den Intake-Prozess. Die Session im Backend ist die einzige Quelle der Wahrheit:
 ///  - Jede Änderung im Frontend wird als Delta geschickt (<see cref="Update"/>, <see cref="UpdateCells"/>)
 ///    und sofort in der Session gespeichert.
+///  - Schrittwechsel laufen ausschließlich über <see cref="Next"/> und <see cref="Back"/>;
+///    welche Wechsel erlaubt sind, entscheidet <see cref="IIntakeWorkflow"/>.
 ///  - Jede Operation antwortet mit dem vollständigen neuen Zustand (<see cref="IntakeStateDto"/>),
-///    inkl. Sheet-Vorschau und neu berechnetem Mapping.
+///    inkl. aktuellem Schritt, Sheet-Vorschau und neu berechnetem Mapping.
 /// </summary>
 public class IntakeService(
     IExcelReaderService excelReader,
@@ -20,6 +22,7 @@ public class IntakeService(
     ISessionStore sessionStore,
     ITargetFormatService targetFormats,
     IMappingService mappingService,
+    IIntakeWorkflow workflow,
     IOptions<IntakeOptions> options) : IIntakeService
 {
     private static readonly string[] AllowedExtensions = [".xlsx", ".xlsm"];
@@ -145,6 +148,30 @@ public class IntakeService(
         }
     }
 
+    // ---------- Schrittwechsel ----------
+
+    public IntakeStateDto Next(Guid sessionId)
+    {
+        var session = GetSession(sessionId);
+        lock (session.SyncRoot)
+        {
+            session.CurrentStep = workflow.GetNextStep(session, BuildMapping(session));
+            session.Touch();
+            return BuildState(session);
+        }
+    }
+
+    public IntakeStateDto Back(Guid sessionId)
+    {
+        var session = GetSession(sessionId);
+        lock (session.SyncRoot)
+        {
+            session.CurrentStep = workflow.GetPreviousStep(session);
+            session.Touch();
+            return BuildState(session);
+        }
+    }
+
     // ---------- Download ----------
 
     public (byte[] Content, string FileName) ExportResult(Guid sessionId)
@@ -165,20 +192,23 @@ public class IntakeService(
 
     // ---------- Zustand aufbauen ----------
 
-    /// <summary>Erstellt den vollständigen Zustand (Konfiguration, Vorschau, Mapping) aus der Session.</summary>
+    /// <summary>Erstellt den vollständigen Zustand (Schritt, Konfiguration, Vorschau, Mapping) aus der Session.</summary>
     private IntakeStateDto BuildState(IntakeSession session)
     {
         var sheet = GetSheet(session, session.SelectedSheet);
+        var mapping = BuildMapping(session);
 
         return new IntakeStateDto(
             session.Id,
             session.FileName,
+            session.CurrentStep,
+            workflow.GetAvailableActions(session, mapping),
             session.Sheets.Select(s => s.ToInfoDto()).ToList(),
             sheet.Name,
             session.ExtractionRange?.ToString(),
             session.TargetFormatId,
             BuildPreview(sheet, session.ExtractionRange),
-            BuildMapping(session)?.ToDto(),
+            mapping?.ToDto(),
             session.LastModifiedAt);
     }
 
