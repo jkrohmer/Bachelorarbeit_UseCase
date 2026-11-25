@@ -2,10 +2,20 @@
 
 // ---------- Zustand einer Session ----------
 
+/** Schritte des Ablaufs – entsprechen den Routen im Frontend (/upload, /extraction, ...). */
+export type IntakeStep = 'upload' | 'extraction' | 'mapping' | 'preview';
+
+/** Mögliche Schrittwechsel. */
+export type IntakeAction = 'back' | 'next';
+
 /** Vollständiger Zustand einer Session – Antwort auf Upload, Laden und jede Änderung. */
 export interface IntakeState {
   sessionId: string;
   fileName: string;
+  /** Aktueller Schritt – das Backend entscheidet über die Navigation. */
+  currentStep: IntakeStep;
+  /** Im aktuellen Schritt erlaubte Schrittwechsel. */
+  availableActions: IntakeAction[];
   sheets: SheetInfo[];
   selectedSheet: string;
   range: string | null;

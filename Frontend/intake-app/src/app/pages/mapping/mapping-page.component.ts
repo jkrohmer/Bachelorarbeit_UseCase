@@ -1,5 +1,4 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { CellUpdate } from '../../core/models/intake.models';
 import { IntakeStateService } from '../../core/services/intake-state.service';
 import { MappedTableComponent } from '../../shared/components/mapped-table/mapped-table.component';
@@ -17,7 +16,6 @@ import { MappedTableComponent } from '../../shared/components/mapped-table/mappe
   styleUrl: './mapping-page.component.scss',
 })
 export class MappingPageComponent {
-  private readonly router = inject(Router);
   readonly state = inject(IntakeStateService);
 
   readonly result = this.state.mapping;
@@ -33,10 +31,10 @@ export class MappingPageComponent {
   }
 
   back(): void {
-    this.router.navigate(['/extraction']);
+    this.state.back();
   }
 
   next(): void {
-    this.router.navigate(['/preview']);
+    this.state.next();
   }
 }

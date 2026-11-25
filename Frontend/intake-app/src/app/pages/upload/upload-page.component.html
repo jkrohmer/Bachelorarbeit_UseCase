@@ -61,7 +61,7 @@
 
   <footer class="page__actions">
     <span class="spacer"></span>
-    <button class="btn btn--primary" type="button" [disabled]="!state.hasUpload() || uploading()" (click)="start()">
+    <button class="btn btn--primary" type="button" [disabled]="!state.canGoNext() || uploading() || state.saving()" (click)="start()">
       Start →
     </button>
   </footer>

@@ -1,28 +1,28 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
+import { IntakeStep } from '../models/intake.models';
 import { IntakeStateService } from '../services/intake-state.service';
 
-/** Stellt eine vorhandene Session aus dem Backend wieder her (z. B. nach Reload), blockiert aber nie. */
-export const restoreSessionGuard: CanActivateFn = () =>
-  inject(IntakeStateService).ensureLoaded().pipe(map(() => true));
-
-/** Schritt 2+ nur erreichbar, wenn eine Datei hochgeladen wurde. */
-export const uploadRequiredGuard: CanActivateFn = () => {
-  const router = inject(Router);
-  return inject(IntakeStateService)
-    .ensureLoaded()
-    .pipe(map((loaded) => loaded || router.createUrlTree(['/upload'])));
-};
-
-/** Schritt 3+ nur erreichbar, wenn aus Extraction Range und Target Format ein Mapping entsteht. */
-export const mappingRequiredGuard: CanActivateFn = () => {
+/**
+ * Lässt nur die Seite zu, die zum aktuellen Schritt im Backend passt.
+ * Der Schritt einer Route steht in route.data.step.
+ *
+ *  - Keine Session vorhanden      -> nur /upload erlaubt
+ *  - Session vorhanden (ggf. nach Reload aus dem Backend geladen)
+ *                                 -> Umleitung auf die Seite von currentStep
+ */
+export const stepGuard: CanActivateFn = (route) => {
   const state = inject(IntakeStateService);
   const router = inject(Router);
+  const requestedStep = route.data['step'] as IntakeStep;
+
   return state.ensureLoaded().pipe(
     map((loaded) => {
-      if (!loaded) return router.createUrlTree(['/upload']);
-      return state.hasMapping() || router.createUrlTree(['/extraction']);
+      if (!loaded) return requestedStep === 'upload' || router.createUrlTree(['/upload']);
+
+      const currentStep = state.currentStep();
+      return requestedStep === currentStep || router.createUrlTree(['/', currentStep]);
     }),
   );
 };

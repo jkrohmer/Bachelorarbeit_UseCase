@@ -59,9 +59,9 @@
   </div>
 
   <footer class="page__actions">
-    <button class="btn" type="button" (click)="back()">← Back</button>
+    <button class="btn" type="button" [disabled]="!state.canGoBack() || state.saving()" (click)="back()">← Back</button>
     <span class="spacer"></span>
     @if (state.saving()) { <span class="save-status">Wird gespeichert …</span> }
-    <button class="btn btn--primary" type="button" [disabled]="!result() || state.saving()" (click)="next()">Next →</button>
+    <button class="btn btn--primary" type="button" [disabled]="!state.canGoNext() || state.saving()" (click)="next()">Next →</button>
   </footer>
 </section>

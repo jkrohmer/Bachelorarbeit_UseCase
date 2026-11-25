@@ -1,6 +1,5 @@
 import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { CellUpdate, TargetFormat } from '../../core/models/intake.models';
 import { IntakeApiService } from '../../core/services/intake-api.service';
 import { IntakeStateService } from '../../core/services/intake-state.service';
@@ -22,7 +21,6 @@ const DEFAULT_RANGE = 'A1:P30';
 })
 export class ExtractionPageComponent implements OnInit {
   private readonly api = inject(IntakeApiService);
-  private readonly router = inject(Router);
   readonly state = inject(IntakeStateService);
 
   readonly targetFormats = signal<TargetFormat[]>([]);
@@ -46,7 +44,7 @@ export class ExtractionPageComponent implements OnInit {
     this.targetFormats().find((f) => f.id === this.state.targetFormatId()) ?? null,
   );
 
-  readonly canContinue = computed(() => this.state.hasMapping() && !this.state.saving());
+  readonly canContinue = computed(() => this.state.canGoNext() && !this.state.saving());
 
   /** Zuletzt an das Backend geschickte Range – verhindert doppelte Anfragen (Enter + blur). */
   private lastSubmittedRange: string | null = null;
@@ -99,11 +97,11 @@ export class ExtractionPageComponent implements OnInit {
   }
 
   back(): void {
-    this.router.navigate(['/upload']);
+    this.state.back();
   }
 
   next(): void {
-    this.router.navigate(['/mapping']);
+    this.state.next();
   }
 
   private applyRange(value: string | null): void {

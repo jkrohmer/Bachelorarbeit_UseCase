@@ -1,13 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { IntakeApiService } from '../../core/services/intake-api.service';
 import { IntakeStateService } from '../../core/services/intake-state.service';
 import { SheetPreviewComponent } from '../../shared/components/sheet-preview/sheet-preview.component';
 
 /**
  * Schritt 1: Excel-Datei hochladen und Sheets in der Vorschau ansehen.
- * Die Auswahl des Sheets wird sofort im Backend gespeichert.
+ * Die Auswahl des Sheets wird sofort im Backend gespeichert; "Start" wechselt über das Backend zum nächsten Schritt.
  */
 @Component({
   selector: 'app-upload-page',
@@ -16,7 +15,6 @@ import { SheetPreviewComponent } from '../../shared/components/sheet-preview/she
   styleUrl: './upload-page.component.scss',
 })
 export class UploadPageComponent {
-  private readonly router = inject(Router);
   readonly state = inject(IntakeStateService);
 
   readonly uploading = signal(false);
@@ -52,7 +50,7 @@ export class UploadPageComponent {
   }
 
   start(): void {
-    this.router.navigate(['/extraction']);
+    this.state.next();
   }
 
   private upload(file: File): void {

@@ -48,7 +48,7 @@
   </div>
 
   <footer class="page__actions">
-    <button class="btn" type="button" (click)="back()">← Back</button>
+    <button class="btn" type="button" [disabled]="!state.canGoBack() || state.saving()" (click)="back()">← Back</button>
     <span class="spacer"></span>
   </footer>
 </section>

@@ -48,7 +48,7 @@ export class ResultPreviewPageComponent {
   }
 
   back(): void {
-    this.router.navigate(['/mapping']);
+    this.state.back();
   }
 
   startOver(): void {

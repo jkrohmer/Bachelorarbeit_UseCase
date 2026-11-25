@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   EMPTY,
   Observable,
@@ -30,12 +31,16 @@ interface QueuedRequest {
  * an das Backend geschickt, und der Zustand wird ausschließlich aus dessen Antwort übernommen.
  * Im Browser wird nur die Session-ID gespeichert, damit ein Reload die Session wiederfindet.
  *
+ * Auch die Navigation bestimmt das Backend: Schrittwechsel laufen über next()/back(), und das
+ * Frontend wechselt automatisch auf die Seite des Schritts, den das Backend zurückmeldet.
+ *
  * Änderungen werden in einer Warteschlange nacheinander gesendet (concatMap). So kommen sie
  * in der richtigen Reihenfolge an und eine ältere Antwort überschreibt nie eine neuere.
  */
 @Injectable({ providedIn: 'root' })
 export class IntakeStateService {
   private readonly api = inject(IntakeApiService);
+  private readonly router = inject(Router);
 
   /** Letzter vom Backend bestätigter Zustand. */
   readonly snapshot = signal<IntakeState | null>(null);
@@ -47,6 +52,10 @@ export class IntakeStateService {
   readonly saving = computed(() => this.pendingCount() > 0);
   readonly hasUpload = computed(() => this.snapshot() !== null);
   readonly hasMapping = computed(() => this.snapshot()?.mapping != null);
+
+  readonly currentStep = computed(() => this.snapshot()?.currentStep ?? null);
+  readonly canGoNext = computed(() => this.snapshot()?.availableActions.includes('next') ?? false);
+  readonly canGoBack = computed(() => this.snapshot()?.availableActions.includes('back') ?? false);
 
   readonly sessionId = computed(() => this.snapshot()?.sessionId ?? null);
   readonly fileName = computed(() => this.snapshot()?.fileName ?? null);
@@ -126,6 +135,16 @@ export class IntakeStateService {
     return this.enqueue((sessionId) => this.api.updateCells(sessionId, { sheetName, cells }));
   }
 
+  // ---------- Schrittwechsel (das Backend entscheidet, ob er erlaubt ist) ----------
+
+  next(): Observable<IntakeState> {
+    return this.enqueue((sessionId) => this.api.next(sessionId));
+  }
+
+  back(): Observable<IntakeState> {
+    return this.enqueue((sessionId) => this.api.back(sessionId));
+  }
+
   reset(): void {
     this.snapshot.set(null);
     this.error.set(null);
@@ -145,8 +164,15 @@ export class IntakeStateService {
   }
 
   private apply(state: IntakeState): void {
+    const previousStep = this.snapshot()?.currentStep;
     this.snapshot.set(state);
     try { sessionStorage.setItem(STORAGE_KEY, state.sessionId); } catch { /* ignorieren */ }
+
+    // Hat das Backend den Schritt gewechselt, zur passenden Seite navigieren.
+    // (Beim ersten Laden kümmert sich der stepGuard um die richtige Seite.)
+    if (previousStep && previousStep !== state.currentStep) {
+      this.router.navigate(['/', state.currentStep]);
+    }
   }
 
   private readStoredSessionId(): string | null {

@@ -33,6 +33,16 @@ export class IntakeApiService {
     return this.http.patch<IntakeState>(`${this.baseUrl}/intake/${sessionId}/cells`, update);
   }
 
+  /** Zum nächsten Schritt wechseln. */
+  next(sessionId: string): Observable<IntakeState> {
+    return this.http.post<IntakeState>(`${this.baseUrl}/intake/${sessionId}/next`, {});
+  }
+
+  /** Zum vorherigen Schritt wechseln. */
+  back(sessionId: string): Observable<IntakeState> {
+    return this.http.post<IntakeState>(`${this.baseUrl}/intake/${sessionId}/back`, {});
+  }
+
   getTargetFormats(): Observable<TargetFormat[]> {
     return this.http.get<TargetFormat[]>(`${this.baseUrl}/target-formats`);
   }
