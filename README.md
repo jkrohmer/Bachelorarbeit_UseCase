@@ -46,6 +46,10 @@ Der komplette Zustand einer Session liegt im Backend – das Frontend speichert 
 - Das Backend antwortet mit dem **vollständigen neuen Zustand** (Konfiguration, Sheet-Vorschau, neu berechnetes Mapping),
   den das Frontend direkt anzeigt.
 - Änderungen werden im Frontend in einer Warteschlange nacheinander gesendet, damit die Reihenfolge erhalten bleibt.
+- Auch der **aktuelle Schritt** liegt im Backend (`currentStep`). Schrittwechsel laufen nur über `POST next/back`;
+  welche gerade erlaubt sind, steht in `availableActions`. Das Frontend navigiert automatisch zur Seite des
+  aktuellen Schritts – so lässt sich der Ablauf auch headless (z. B. von einem Agenten) über die API steuern.
+  Die Übergangsregeln stehen in `Backend/IntakeApi/Services/IntakeWorkflow.cs`.
 - Zellen werden immer in der Ursprungsdatei geändert (Adresse z. B. `B5`); der Originalwert bleibt gespeichert,
   sodass geänderte Zellen erkennbar sind. Wird der Originalwert wieder eingetragen, gilt die Zelle als unverändert.
 
@@ -90,6 +94,8 @@ Frontend/intake-app/src
 | GET   | `/api/intake/{id}` | Aktuellen Zustand der Session abrufen (z. B. nach Reload) |
 | PATCH | `/api/intake/{id}` | Konfiguration ändern – Delta, z. B. `{ "range": "A1:F20" }` oder `{ "targetFormatId": "target-format-2" }` |
 | PATCH | `/api/intake/{id}/cells` | Zellen ändern – z. B. `{ "sheetName": "Kunden", "cells": [{ "address": "B5", "value": "Neu" }] }` |
+| POST  | `/api/intake/{id}/next` | Zum nächsten Schritt wechseln (400 mit Begründung, wenn nicht erlaubt) |
+| POST  | `/api/intake/{id}/back` | Zum vorherigen Schritt wechseln |
 | GET   | `/api/intake/{id}/download` | Mapping-Ergebnis des aktuellen Zustands als .xlsx herunterladen |
 | GET  | `/api/target-formats` | verfügbare Zielformate |
 
