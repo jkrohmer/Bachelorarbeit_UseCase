@@ -29,9 +29,30 @@
     <tbody>
       @for (r of rowIndices(); track r) {
         <tr>
-          @if (showRowNumbers()) { <td class="mapped__rownum">{{ r + 1 }}</td> }
+          @if (showRowNumbers()) {
+            <td class="mapped__rownum" [title]="'Zeile ' + result().sourceRowNumbers[r] + ' in der Excel-Datei'">{{ r + 1 }}</td>
+          }
           @for (col of result().columns; track col.targetColumn) {
-            <td [class.mapped__td--empty]="!col.source">{{ col.values[r] }}</td>
+            <td
+              [class.mapped__td--empty]="!col.source"
+              [class.mapped__td--edited]="isEdited(col, r)"
+              [class.mapped__td--editable]="canEdit(col)"
+              [title]="canEdit(col) ? 'Zelle ' + sourceAddress(col, r) + ' – Doppelklick zum Bearbeiten' : ''"
+              (dblclick)="startEdit(col, r)"
+            >
+              @if (isEditing(col, r)) {
+                <input
+                  appAutoFocus
+                  class="cell-editor"
+                  [value]="col.values[r]"
+                  (keydown.enter)="commitEdit(col, r, $any($event.target).value)"
+                  (keydown.escape)="cancelEdit()"
+                  (blur)="commitEdit(col, r, $any($event.target).value)"
+                />
+              } @else {
+                {{ col.values[r] }}
+              }
+            </td>
           }
         </tr>
       } @empty {

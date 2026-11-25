@@ -111,6 +111,28 @@ td {
   }
 }
 
+// Manuell geänderte Zellen
+.cell--edited,
+.cell--edited.cell--in-range {
+  background: $color-edited;
+}
+
+.cell--editable {
+  cursor: cell;
+}
+
+// Eingabefeld beim Bearbeiten einer Zelle
+.cell-editor {
+  width: 100%;
+  min-width: 80px;
+  box-sizing: border-box;
+  border: 2px solid $color-primary;
+  border-radius: 2px;
+  padding: 1px 4px;
+  font: inherit;
+  outline: none;
+}
+
 .sheet__hint {
   margin: 8px 0 0;
   font-size: 12px;

@@ -63,6 +63,16 @@
     );
   }
 
+  &__td--editable {
+    cursor: cell;
+  }
+
+  // Manuell geänderte Werte (auch beim Hover sichtbar)
+  &__td--edited,
+  tbody tr:hover &__td--edited {
+    background-color: $color-edited;
+  }
+
   &__rownum {
     width: 44px;
     text-align: center !important;
@@ -79,6 +89,18 @@
     color: $color-text-muted;
     padding: 24px !important;
   }
+}
+
+// Eingabefeld beim Bearbeiten einer Zelle
+.cell-editor {
+  width: 100%;
+  min-width: 80px;
+  box-sizing: border-box;
+  border: 2px solid $color-primary;
+  border-radius: 2px;
+  padding: 1px 4px;
+  font: inherit;
+  outline: none;
 }
 
 .source {

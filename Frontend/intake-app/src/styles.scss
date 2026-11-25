@@ -145,6 +145,12 @@ h1, h2, h3 {
   .spacer {
     flex: 1;
   }
+
+  // Hinweis, solange Änderungen noch an das Backend übertragen werden
+  .save-status {
+    font-size: 13px;
+    color: $color-text-muted;
+  }
 }
 
 // ---------- Meldungen ----------

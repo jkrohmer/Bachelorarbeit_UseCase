@@ -13,7 +13,20 @@
         <tr>
           <th class="row-header" [class.row-header--active]="isRowInRange(r)">{{ r + 1 }}</th>
           @for (cell of row; track $index; let c = $index) {
-            <td class="cell" [ngClass]="borderClasses(r, c)" [title]="cell">{{ cell }}</td>
+            <td class="cell" [ngClass]="cellClasses(r, c)" [title]="cell" (dblclick)="startEdit(r, c)">
+              @if (isEditing(r, c)) {
+                <input
+                  appAutoFocus
+                  class="cell-editor"
+                  [value]="cell"
+                  (keydown.enter)="commitEdit(r, c, $any($event.target).value)"
+                  (keydown.escape)="cancelEdit()"
+                  (blur)="commitEdit(r, c, $any($event.target).value)"
+                />
+              } @else {
+                {{ cell }}
+              }
+            </td>
           }
         </tr>
       }
@@ -25,4 +38,7 @@
   <p class="sheet__hint">
     Vorschau gekürzt – das Sheet hat {{ preview().totalRows }} Zeilen und {{ preview().totalColumns }} Spalten.
   </p>
+}
+@if (editable()) {
+  <p class="sheet__hint">Doppelklick auf eine Zelle zum Bearbeiten. Geänderte Zellen sind gelb markiert.</p>
 }
