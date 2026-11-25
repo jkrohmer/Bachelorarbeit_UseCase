@@ -40,6 +40,26 @@ public partial record CellRange(int StartRow, int StartColumn, int EndRow, int E
         return true;
     }
 
+    [GeneratedRegex(@"^\s*([A-Za-z]{1,3})(\d{1,7})\s*$")]
+    private static partial Regex CellRegex();
+
+    /// <summary>Parst eine einzelne Zelladresse wie "B5" in 0-basierte Indizes (Zeile 4, Spalte 1).</summary>
+    public static bool TryParseCell(string? value, out int row, out int column)
+    {
+        row = column = -1;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+
+        var match = CellRegex().Match(value);
+        if (!match.Success) return false;
+
+        row = int.Parse(match.Groups[2].Value) - 1;
+        column = LetterToColumnIndex(match.Groups[1].Value);
+        return row >= 0;
+    }
+
+    /// <summary>0-basierte Indizes -> Zelladresse, z. B. (4, 1) -> "B5".</summary>
+    public static string ToAddress(int row, int column) => $"{ColumnIndexToLetter(column)}{row + 1}";
+
     /// <summary>0 -> "A", 25 -> "Z", 26 -> "AA"</summary>
     public static string ColumnIndexToLetter(int index)
     {

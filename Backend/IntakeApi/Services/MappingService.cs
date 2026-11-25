@@ -30,8 +30,10 @@ public class MappingService : IMappingService
             .Where(s => !string.IsNullOrWhiteSpace(s.Header))
             .ToList();
 
-        // 2. Datenzeilen (ohne Überschrift, ohne komplett leere Zeilen)
-        var dataRowIndices = Enumerable.Range(range.StartRow + 1, Math.Max(0, range.RowCount - 1))
+        // 2. Datenzeilen (ohne Überschrift, ohne komplett leere Zeilen).
+        //    Zeilen unterhalb des letzten belegten Sheet-Inhalts sind immer leer und werden gar nicht erst geprüft.
+        var lastDataRow = Math.Min(range.EndRow, sheet.RowCount - 1);
+        var dataRowIndices = Enumerable.Range(range.StartRow + 1, Math.Max(0, lastDataRow - range.StartRow))
             .Where(r => Enumerable.Range(range.StartColumn, range.ColumnCount)
                 .Any(c => !string.IsNullOrWhiteSpace(sheet.GetCell(r, c))))
             .ToList();
@@ -63,7 +65,12 @@ public class MappingService : IMappingService
             {
                 TargetColumn = target.Name,
                 Source = new SourceColumnInfo(match.Header, match.Letter),
-                Values = dataRowIndices.Select(r => sheet.GetCell(r, match.Index)).ToList()
+                Values = dataRowIndices.Select(r => sheet.GetCell(r, match.Index)).ToList(),
+                EditedRowIndices = dataRowIndices
+                    .Select((sheetRow, i) => (sheetRow, i))
+                    .Where(x => sheet.IsEdited(x.sheetRow, match.Index))
+                    .Select(x => x.i)
+                    .ToList()
             });
         }
 
@@ -78,7 +85,7 @@ public class MappingService : IMappingService
             TargetFormatName = format.Name,
             SheetName = sheet.Name,
             Range = range.ToString(),
-            RowCount = dataRowIndices.Count,
+            SourceRowIndices = dataRowIndices,
             Columns = mappedColumns,
             UnmappedSourceColumns = unmapped
         };
