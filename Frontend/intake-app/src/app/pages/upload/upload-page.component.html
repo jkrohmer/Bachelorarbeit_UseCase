@@ -22,8 +22,8 @@
     }
   </header>
 
-  @if (error()) {
-    <div class="alert alert--error">{{ error() }}</div>
+  @if (uploadError() ?? state.error(); as message) {
+    <div class="alert alert--error">{{ message }}</div>
   }
 
   <div class="page__body">
@@ -53,10 +53,8 @@
         <button class="btn" type="button" (click)="removeFile()">Andere Datei</button>
       </div>
 
-      @if (loadingPreview()) {
-        <div class="loading">Vorschau wird geladen …</div>
-      } @else if (preview()) {
-        @if (preview(); as p) { <app-sheet-preview class="preview" [preview]="p" /> }
+      @if (state.preview(); as p) {
+        <app-sheet-preview class="preview" [preview]="p" />
       }
     }
   </div>

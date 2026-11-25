@@ -6,8 +6,8 @@
     </div>
   </header>
 
-  @if (error()) {
-    <div class="alert alert--error">{{ error() }}</div>
+  @if (state.error() ?? formatsError(); as message) {
+    <div class="alert alert--error">{{ message }}</div>
   }
 
   <div class="page__body layout">
@@ -33,8 +33,8 @@
               [class.is-invalid]="!startValid()"
               [ngModel]="startCell()"
               (ngModelChange)="startCell.set($event.toUpperCase())"
-              (blur)="onRangeChanged()"
-              (keyup.enter)="onRangeChanged()"
+              (blur)="submitRange()"
+              (keyup.enter)="submitRange()"
               placeholder="A1"
             />
           </div>
@@ -47,8 +47,8 @@
               [class.is-invalid]="!endValid()"
               [ngModel]="endCell()"
               (ngModelChange)="endCell.set($event.toUpperCase())"
-              (blur)="onRangeChanged()"
-              (keyup.enter)="onRangeChanged()"
+              (blur)="submitRange()"
+              (keyup.enter)="submitRange()"
               placeholder="P30"
             />
           </div>
@@ -68,7 +68,7 @@
         <h3>Target Format</h3>
         <div class="field">
           <label for="format">Zielsystem</label>
-          <select id="format" class="select" [ngModel]="selectedFormatId()" (ngModelChange)="selectedFormatId.set($event)">
+          <select id="format" class="select" [ngModel]="state.targetFormatId()" (ngModelChange)="onFormatChange($event)">
             @for (format of targetFormats(); track format.id) {
               <option [value]="format.id">{{ format.name }}</option>
             }
@@ -91,10 +91,14 @@
 
     <!-- Vorschau mit Rahmen -->
     <div class="preview-area">
-      @if (loading()) {
-        <div class="loading">Vorschau wird geladen …</div>
-      } @else if (preview()) {
-        @if (preview(); as p) { <app-sheet-preview class="preview" [preview]="p" [highlightRange]="range()" /> }
+      @if (state.preview(); as p) {
+        <app-sheet-preview
+          class="preview"
+          [preview]="p"
+          [highlightRange]="range()"
+          [editable]="true"
+          (cellEdit)="onCellEdit($event)"
+        />
       }
     </div>
   </div>
@@ -102,8 +106,7 @@
   <footer class="page__actions">
     <button class="btn" type="button" (click)="back()">← Back</button>
     <span class="spacer"></span>
-    <button class="btn btn--primary" type="button" [disabled]="!canContinue()" (click)="next()">
-      @if (submitting()) { Mapping läuft … } @else { Next → }
-    </button>
+    @if (state.saving()) { <span class="save-status">Wird gespeichert …</span> }
+    <button class="btn btn--primary" type="button" [disabled]="!canContinue()" (click)="next()">Next →</button>
   </footer>
 </section>

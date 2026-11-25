@@ -18,6 +18,11 @@
   font-weight: 600;
 }
 
+.chip--edited {
+  background: $color-edited;
+  border-color: #e6c65c;
+}
+
 .notes {
   display: flex;
   flex-direction: column;

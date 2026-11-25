@@ -6,16 +6,14 @@
     </div>
   </header>
 
-  @if (error()) {
-    <div class="alert alert--error">{{ error() }}</div>
+  @if (error() ?? state.error(); as message) {
+    <div class="alert alert--error">{{ message }}</div>
   }
 
   <div class="page__body layout">
     <div class="result-area">
-      @if (loading()) {
-        <div class="loading">Ergebnis wird geladen …</div>
-      } @else if (result()) {
-        @if (result(); as r) { <app-mapped-table class="table" [result]="r" [showSource]="false" /> }
+      @if (result(); as r) {
+        <app-mapped-table class="table" [result]="r" [showSource]="false" />
       }
     </div>
 

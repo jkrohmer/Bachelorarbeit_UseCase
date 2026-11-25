@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
-import { configRequiredGuard, uploadRequiredGuard } from './core/guards/step.guards';
+import { mappingRequiredGuard, restoreSessionGuard, uploadRequiredGuard } from './core/guards/step.guards';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'upload' },
   {
     path: 'upload',
     title: 'Upload · Intake',
+    canActivate: [restoreSessionGuard],
     loadComponent: () => import('./pages/upload/upload-page.component').then((m) => m.UploadPageComponent),
   },
   {
@@ -18,13 +19,13 @@ export const routes: Routes = [
   {
     path: 'mapping',
     title: 'Mapping · Intake',
-    canActivate: [configRequiredGuard],
+    canActivate: [mappingRequiredGuard],
     loadComponent: () => import('./pages/mapping/mapping-page.component').then((m) => m.MappingPageComponent),
   },
   {
     path: 'preview',
     title: 'Preview · Intake',
-    canActivate: [configRequiredGuard],
+    canActivate: [mappingRequiredGuard],
     loadComponent: () =>
       import('./pages/result-preview/result-preview-page.component').then((m) => m.ResultPreviewPageComponent),
   },

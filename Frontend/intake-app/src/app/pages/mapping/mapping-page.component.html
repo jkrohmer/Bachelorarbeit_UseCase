@@ -2,7 +2,7 @@
   <header class="page__header">
     <div>
       <h1>Mapping</h1>
-      <p>Jede Zielspalte zeigt, aus welcher Source-Spalte der Original-Datei die Werte übernommen wurden.</p>
+      <p>Jede Zielspalte zeigt, aus welcher Source-Spalte der Original-Datei die Werte übernommen wurden. Werte lassen sich per Doppelklick korrigieren.</p>
     </div>
 
     @if (result(); as r) {
@@ -12,12 +12,15 @@
         <span class="chip">{{ r.targetFormatName }}</span>
         <span class="chip chip--strong">{{ mappedCount() }} / {{ r.columns.length }} Spalten gemappt</span>
         <span class="chip">{{ r.rowCount }} Zeilen</span>
+        @if (editedCount() > 0) {
+          <span class="chip chip--edited">{{ editedCount() }} Wert(e) geändert</span>
+        }
       </div>
     }
   </header>
 
-  @if (error()) {
-    <div class="alert alert--error">{{ error() }}</div>
+  @if (state.error(); as message) {
+    <div class="alert alert--error">{{ message }}</div>
   }
 
   @if (result(); as r) {
@@ -44,16 +47,21 @@
   }
 
   <div class="page__body">
-    @if (loading()) {
-      <div class="loading">Mapping wird ausgeführt …</div>
-    } @else if (result()) {
-      @if (result(); as r) { <app-mapped-table class="table" [result]="r" [showSource]="true" /> }
+    @if (result(); as r) {
+      <app-mapped-table
+        class="table"
+        [result]="r"
+        [showSource]="true"
+        [editable]="true"
+        (cellEdit)="onCellEdit($event)"
+      />
     }
   </div>
 
   <footer class="page__actions">
     <button class="btn" type="button" (click)="back()">← Back</button>
     <span class="spacer"></span>
-    <button class="btn btn--primary" type="button" [disabled]="!result()" (click)="next()">Next →</button>
+    @if (state.saving()) { <span class="save-status">Wird gespeichert …</span> }
+    <button class="btn btn--primary" type="button" [disabled]="!result() || state.saving()" (click)="next()">Next →</button>
   </footer>
 </section>

@@ -1,53 +1,40 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import {
-  ExtractionConfig,
-  ExtractionConfigResponse,
-  MappingResult,
-  SheetPreview,
-  TargetFormat,
-  UploadResponse,
-} from '../models/intake.models';
+import { CellsUpdate, IntakeState, IntakeUpdate, TargetFormat } from '../models/intake.models';
 
 /**
  * Kapselt alle HTTP-Aufrufe an das .NET-Backend.
+ * Alle Intake-Endpunkte antworten mit dem vollständigen Session-Zustand (IntakeState).
  */
 @Injectable({ providedIn: 'root' })
 export class IntakeApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  upload(file: File): Observable<UploadResponse> {
+  upload(file: File): Observable<IntakeState> {
     const formData = new FormData();
     formData.append('file', file, file.name);
-    return this.http.post<UploadResponse>(`${this.baseUrl}/intake/upload`, formData);
+    return this.http.post<IntakeState>(`${this.baseUrl}/intake/upload`, formData);
   }
 
-  getSheetPreview(sessionId: string, sheetName: string, range?: string): Observable<SheetPreview> {
-    let params = new HttpParams();
-    if (range) params = params.set('range', range);
-    return this.http.get<SheetPreview>(
-      `${this.baseUrl}/intake/${sessionId}/sheets/${encodeURIComponent(sheetName)}`,
-      { params },
-    );
+  getState(sessionId: string): Observable<IntakeState> {
+    return this.http.get<IntakeState>(`${this.baseUrl}/intake/${sessionId}`);
+  }
+
+  /** Konfiguration ändern – es wird nur das Delta geschickt. */
+  update(sessionId: string, update: IntakeUpdate): Observable<IntakeState> {
+    return this.http.patch<IntakeState>(`${this.baseUrl}/intake/${sessionId}`, update);
+  }
+
+  /** Einzelne Zellen ändern – es werden nur die geänderten Zellen geschickt. */
+  updateCells(sessionId: string, update: CellsUpdate): Observable<IntakeState> {
+    return this.http.patch<IntakeState>(`${this.baseUrl}/intake/${sessionId}/cells`, update);
   }
 
   getTargetFormats(): Observable<TargetFormat[]> {
     return this.http.get<TargetFormat[]>(`${this.baseUrl}/target-formats`);
-  }
-
-  saveExtractionConfig(sessionId: string, config: ExtractionConfig): Observable<ExtractionConfigResponse> {
-    return this.http.put<ExtractionConfigResponse>(`${this.baseUrl}/intake/${sessionId}/extraction`, config);
-  }
-
-  executeMapping(sessionId: string): Observable<MappingResult> {
-    return this.http.post<MappingResult>(`${this.baseUrl}/intake/${sessionId}/mapping`, {});
-  }
-
-  getResult(sessionId: string): Observable<MappingResult> {
-    return this.http.get<MappingResult>(`${this.baseUrl}/intake/${sessionId}/result`);
   }
 
   download(sessionId: string): Observable<{ blob: Blob; fileName: string }> {
