@@ -25,6 +25,7 @@ public static class DtoMapper
             result.SheetName,
             result.Range,
             result.RowCount,
-            result.Columns.Select(c => new MappedColumnDto(c.TargetColumn, c.Source?.ToDto(), c.Values)).ToList(),
+            result.SourceRowIndices.Select(r => r + 1).ToList(), // 1-basiert wie in Excel
+            result.Columns.Select(c => new MappedColumnDto(c.TargetColumn, c.Source?.ToDto(), c.Values, c.EditedRowIndices)).ToList(),
             result.UnmappedSourceColumns.Select(s => s.ToDto()).ToList());
 }

@@ -7,6 +7,7 @@ namespace IntakeApi.Services;
 /// <summary>
 /// Einfache In-Memory-Ablage für Sessions. Für den Prototyp ausreichend –
 /// nach einem Neustart des Backends sind alle Sessions weg.
+/// Sessions, die länger als <see cref="MaxAge"/> nicht geändert wurden, werden entfernt.
 /// </summary>
 public class InMemorySessionStore : ISessionStore
 {
@@ -27,7 +28,7 @@ public class InMemorySessionStore : ISessionStore
         var threshold = DateTime.UtcNow - MaxAge;
         foreach (var (id, session) in _sessions)
         {
-            if (session.CreatedAt < threshold)
+            if (session.LastModifiedAt < threshold)
             {
                 _sessions.TryRemove(id, out _);
             }

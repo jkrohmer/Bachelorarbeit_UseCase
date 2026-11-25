@@ -8,8 +8,11 @@ using Microsoft.Extensions.Options;
 namespace IntakeApi.Services;
 
 /// <summary>
-/// Orchestriert die vier Schritte des Intake-Prozesses:
-/// Upload -> Extraction Range / Target Format -> Mapping -> Preview / Download.
+/// Orchestriert den Intake-Prozess. Die Session im Backend ist die einzige Quelle der Wahrheit:
+///  - Jede Änderung im Frontend wird als Delta geschickt (<see cref="Update"/>, <see cref="UpdateCells"/>)
+///    und sofort in der Session gespeichert.
+///  - Jede Operation antwortet mit dem vollständigen neuen Zustand (<see cref="IntakeStateDto"/>),
+///    inkl. Sheet-Vorschau und neu berechnetem Mapping.
 /// </summary>
 public class IntakeService(
     IExcelReaderService excelReader,
@@ -20,11 +23,14 @@ public class IntakeService(
     IOptions<IntakeOptions> options) : IIntakeService
 {
     private static readonly string[] AllowedExtensions = [".xlsx", ".xlsm"];
+    private const int MaxCellsPerRequest = 1000;
+    private const int MaxCellLength = 32_767; // Excel-Limit pro Zelle
+
     private readonly IntakeOptions _options = options.Value;
 
-    // ---------- Schritt 1: Upload ----------
+    // ---------- Upload ----------
 
-    public async Task<UploadResponseDto> UploadAsync(IFormFile file)
+    public async Task<IntakeStateDto> UploadAsync(IFormFile file)
     {
         if (file is null || file.Length == 0)
             throw new ValidationException("Es wurde keine Datei hochgeladen.");
@@ -44,27 +50,143 @@ public class IntakeService(
         if (sheets.Count == 0)
             throw new ValidationException("Die Excel-Datei enthält keine Sheets.");
 
-        var session = new IntakeSession { FileName = file.FileName, Sheets = sheets };
+        // Startzustand: erstes Sheet, Standard-Range, erstes Target Format
+        CellRange.TryParse(_options.DefaultExtractionRange, out var defaultRange);
+        var session = new IntakeSession
+        {
+            FileName = file.FileName,
+            Sheets = sheets,
+            SelectedSheet = sheets[0].Name,
+            ExtractionRange = defaultRange,
+            TargetFormatId = targetFormats.GetAll().FirstOrDefault()?.Id
+        };
         sessionStore.Save(session);
 
-        return new UploadResponseDto(
-            session.Id,
-            session.FileName,
-            sheets.Select(s => s.ToInfoDto()).ToList(),
-            _options.DefaultExtractionRange);
+        return BuildState(session);
     }
 
-    public SheetPreviewDto GetSheetPreview(Guid sessionId, string sheetName, string? range = null)
+    // ---------- Zustand lesen ----------
+
+    public IntakeStateDto GetState(Guid sessionId)
     {
         var session = GetSession(sessionId);
-        var sheet = GetSheet(session, sheetName);
+        lock (session.SyncRoot)
+        {
+            return BuildState(session);
+        }
+    }
 
-        // Mindestens die (Default-)Range anzeigen, damit der Rahmen vollständig sichtbar ist
-        if (!CellRange.TryParse(range, out var visibleRange))
-            CellRange.TryParse(_options.DefaultExtractionRange, out visibleRange);
+    // ---------- Konfiguration ändern (Delta) ----------
 
-        var rows = Math.Min(Math.Max(sheet.RowCount, (visibleRange?.EndRow ?? -1) + 1), _options.PreviewMaxRows);
-        var cols = Math.Min(Math.Max(sheet.ColumnCount, (visibleRange?.EndColumn ?? -1) + 1), _options.PreviewMaxColumns);
+    public IntakeStateDto Update(Guid sessionId, IntakeUpdateDto update)
+    {
+        var session = GetSession(sessionId);
+        lock (session.SyncRoot)
+        {
+            // Erst alles validieren, dann übernehmen – so wird ein Delta ganz oder gar nicht angewendet.
+            var sheet = update.SheetName is null ? null : GetSheet(session, update.SheetName);
+            var range = update.Range is null ? null : ParseRange(update.Range);
+            var format = update.TargetFormatId is null
+                ? null
+                : targetFormats.GetById(update.TargetFormatId)
+                  ?? throw new NotFoundException($"Target Format '{update.TargetFormatId}' existiert nicht.");
+
+            if (sheet is not null) session.SelectedSheet = sheet.Name;
+            if (range is not null) session.ExtractionRange = range;
+            if (format is not null) session.TargetFormatId = format.Id;
+
+            session.Touch();
+            return BuildState(session);
+        }
+    }
+
+    // ---------- Zellen ändern (Delta) ----------
+
+    public IntakeStateDto UpdateCells(Guid sessionId, CellsUpdateDto update)
+    {
+        if (update.Cells is null || update.Cells.Count == 0)
+            throw new ValidationException("Es wurden keine Zellen übergeben.");
+
+        if (update.Cells.Count > MaxCellsPerRequest)
+            throw new ValidationException($"Es können höchstens {MaxCellsPerRequest} Zellen auf einmal geändert werden.");
+
+        var session = GetSession(sessionId);
+        lock (session.SyncRoot)
+        {
+            var sheet = GetSheet(session, update.SheetName);
+
+            // Bearbeitbar ist der vorhandene Sheet-Inhalt sowie (falls größer) die Extraction Range
+            var maxRow = Math.Max(sheet.RowCount, (session.ExtractionRange?.EndRow ?? -1) + 1);
+            var maxColumn = Math.Max(sheet.ColumnCount, (session.ExtractionRange?.EndColumn ?? -1) + 1);
+
+            // Erst alles validieren, dann übernehmen
+            var changes = update.Cells.Select(cell =>
+            {
+                if (!CellRange.TryParseCell(cell.Address, out var row, out var column))
+                    throw new ValidationException($"'{cell.Address}' ist keine gültige Zelladresse (Beispiel: B5).");
+
+                if (row >= maxRow || column >= maxColumn)
+                    throw new ValidationException($"Die Zelle {cell.Address} liegt außerhalb des Sheets und der Extraction Range.");
+
+                var value = cell.Value ?? string.Empty;
+                if (value.Length > MaxCellLength)
+                    throw new ValidationException($"Der Wert für {cell.Address} ist zu lang (max. {MaxCellLength} Zeichen).");
+
+                return (row, column, value);
+            }).ToList();
+
+            foreach (var (row, column, value) in changes)
+            {
+                sheet.SetCell(row, column, value);
+            }
+
+            session.Touch();
+            return BuildState(session);
+        }
+    }
+
+    // ---------- Download ----------
+
+    public (byte[] Content, string FileName) ExportResult(Guid sessionId)
+    {
+        var session = GetSession(sessionId);
+        MappingResult result;
+        lock (session.SyncRoot)
+        {
+            result = BuildMapping(session)
+                ?? throw new ValidationException("Extraction Range und Target Format müssen zuerst festgelegt werden.");
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(session.FileName);
+        var fileName = $"{baseName}_{result.TargetFormatName.Replace(' ', '_')}.xlsx";
+
+        return (excelExport.CreateWorkbook(result), fileName);
+    }
+
+    // ---------- Zustand aufbauen ----------
+
+    /// <summary>Erstellt den vollständigen Zustand (Konfiguration, Vorschau, Mapping) aus der Session.</summary>
+    private IntakeStateDto BuildState(IntakeSession session)
+    {
+        var sheet = GetSheet(session, session.SelectedSheet);
+
+        return new IntakeStateDto(
+            session.Id,
+            session.FileName,
+            session.Sheets.Select(s => s.ToInfoDto()).ToList(),
+            sheet.Name,
+            session.ExtractionRange?.ToString(),
+            session.TargetFormatId,
+            BuildPreview(sheet, session.ExtractionRange),
+            BuildMapping(session)?.ToDto(),
+            session.LastModifiedAt);
+    }
+
+    /// <summary>Excel-ähnliche Vorschau. Zeigt mindestens die komplette Extraction Range (begrenzt durch die Optionen).</summary>
+    private SheetPreviewDto BuildPreview(SheetData sheet, CellRange? range)
+    {
+        var rows = Math.Min(Math.Max(sheet.RowCount, (range?.EndRow ?? -1) + 1), _options.PreviewMaxRows);
+        var cols = Math.Min(Math.Max(sheet.ColumnCount, (range?.EndColumn ?? -1) + 1), _options.PreviewMaxColumns);
 
         var previewRows = Enumerable.Range(0, rows)
             .Select(r => (IReadOnlyList<string>)Enumerable.Range(0, cols).Select(c => sheet.GetCell(r, c)).ToList())
@@ -72,63 +194,23 @@ public class IntakeService(
 
         var letters = Enumerable.Range(0, cols).Select(CellRange.ColumnIndexToLetter).ToList();
 
-        return new SheetPreviewDto(sheet.Name, sheet.RowCount, sheet.ColumnCount, letters, previewRows);
+        var editedCells = sheet.EditedCells
+            .Where(c => c.Row < rows && c.Column < cols)
+            .Select(c => CellRange.ToAddress(c.Row, c.Column))
+            .ToList();
+
+        return new SheetPreviewDto(sheet.Name, sheet.RowCount, sheet.ColumnCount, letters, previewRows, editedCells);
     }
 
-    // ---------- Schritt 2: Extraction Range & Target Format ----------
-
-    public ExtractionConfigResponseDto SaveExtractionConfig(Guid sessionId, ExtractionConfigDto config)
+    /// <summary>Berechnet das Mapping aus dem aktuellen Zustand; null, solange die Konfiguration unvollständig ist.</summary>
+    private MappingResult? BuildMapping(IntakeSession session)
     {
-        var session = GetSession(sessionId);
-        var sheet = GetSheet(session, config.SheetName);
+        if (session.ExtractionRange is null || session.TargetFormatId is null) return null;
 
-        if (!CellRange.TryParse(config.Range, out var range))
-            throw new ValidationException($"'{config.Range}' ist keine gültige Range (Beispiel: A1:P30).");
+        var format = targetFormats.GetById(session.TargetFormatId);
+        if (format is null) return null;
 
-        if (range.RowCount < 2)
-            throw new ValidationException("Die Range muss mindestens eine Überschriftszeile und eine Datenzeile enthalten.");
-
-        var format = targetFormats.GetById(config.TargetFormatId)
-            ?? throw new NotFoundException($"Target Format '{config.TargetFormatId}' existiert nicht.");
-
-        session.SelectedSheet = sheet.Name;
-        session.ExtractionRange = range;
-        session.TargetFormatId = format.Id;
-        session.MappingResult = null; // alte Ergebnisse verwerfen
-
-        return new ExtractionConfigResponseDto(sheet.Name, range.ToString(), format.Id, range.RowCount, range.ColumnCount);
-    }
-
-    // ---------- Schritt 3: Mapping ----------
-
-    public MappingResultDto ExecuteMapping(Guid sessionId)
-    {
-        var session = GetSession(sessionId);
-
-        if (session.SelectedSheet is null || session.ExtractionRange is null || session.TargetFormatId is null)
-            throw new ValidationException("Extraction Range und Target Format müssen zuerst festgelegt werden.");
-
-        var sheet = GetSheet(session, session.SelectedSheet);
-        var format = targetFormats.GetById(session.TargetFormatId)
-            ?? throw new NotFoundException($"Target Format '{session.TargetFormatId}' existiert nicht.");
-
-        session.MappingResult = mappingService.Map(sheet, session.ExtractionRange, format);
-        return session.MappingResult.ToDto();
-    }
-
-    // ---------- Schritt 4: Preview & Download ----------
-
-    public MappingResultDto GetMappingResult(Guid sessionId) => GetResult(GetSession(sessionId)).ToDto();
-
-    public (byte[] Content, string FileName) ExportResult(Guid sessionId)
-    {
-        var session = GetSession(sessionId);
-        var result = GetResult(session);
-
-        var baseName = Path.GetFileNameWithoutExtension(session.FileName);
-        var fileName = $"{baseName}_{result.TargetFormatName.Replace(' ', '_')}.xlsx";
-
-        return (excelExport.CreateWorkbook(result), fileName);
+        return mappingService.Map(GetSheet(session, session.SelectedSheet), session.ExtractionRange, format);
     }
 
     // ---------- Hilfsmethoden ----------
@@ -141,7 +223,14 @@ public class IntakeService(
         session.FindSheet(sheetName)
         ?? throw new NotFoundException($"Sheet '{sheetName}' existiert nicht.");
 
-    private static MappingResult GetResult(IntakeSession session) =>
-        session.MappingResult
-        ?? throw new ValidationException("Es wurde noch kein Mapping ausgeführt.");
+    private static CellRange ParseRange(string value)
+    {
+        if (!CellRange.TryParse(value, out var range))
+            throw new ValidationException($"'{value}' ist keine gültige Range (Beispiel: A1:P30).");
+
+        if (range.RowCount < 2)
+            throw new ValidationException("Die Range muss mindestens eine Überschriftszeile und eine Datenzeile enthalten.");
+
+        return range;
+    }
 }

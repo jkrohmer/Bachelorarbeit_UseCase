@@ -35,13 +35,15 @@ public interface IMappingService
     MappingResult Map(SheetData sheet, CellRange range, TargetFormat format);
 }
 
-/// <summary>Orchestriert den gesamten Intake-Ablauf (wird von den Controllern genutzt).</summary>
+/// <summary>
+/// Orchestriert den gesamten Intake-Ablauf (wird von den Controllern genutzt).
+/// Jede Operation liefert den vollständigen, aktuellen Session-Zustand zurück.
+/// </summary>
 public interface IIntakeService
 {
-    Task<UploadResponseDto> UploadAsync(IFormFile file);
-    SheetPreviewDto GetSheetPreview(Guid sessionId, string sheetName, string? range = null);
-    ExtractionConfigResponseDto SaveExtractionConfig(Guid sessionId, ExtractionConfigDto config);
-    MappingResultDto ExecuteMapping(Guid sessionId);
-    MappingResultDto GetMappingResult(Guid sessionId);
+    Task<IntakeStateDto> UploadAsync(IFormFile file);
+    IntakeStateDto GetState(Guid sessionId);
+    IntakeStateDto Update(Guid sessionId, IntakeUpdateDto update);
+    IntakeStateDto UpdateCells(Guid sessionId, CellsUpdateDto update);
     (byte[] Content, string FileName) ExportResult(Guid sessionId);
 }
